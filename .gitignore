@@ -1,0 +1,42 @@
+# TI Code Composer Studio build output
+Debug/
+Release/
+
+# Object files
+*.obj
+*.o
+
+# Linker output
+*.out
+*.map
+
+# Dependency files
+*.d
+
+# CCS project metadata (auto-generated)
+*.bak
+*.cproject.bak
+
+# CCS build system generated makefiles
+*.mk
+makefile
+
+# Preprocessor output
+*.pp
+
+# Assembly listings
+*.lst
+
+# CCS workspace settings (local to each developer)
+.cproject
+.project
+.settings/
+
+# TI DSP/BIOS and SYS/BIOS generated files
+*.gel
+*.tcf
+*.tci
+
+# Debug/flash configuration (machine-specific)
+*.ccxml
+targetConfigs/
