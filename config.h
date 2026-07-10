@@ -67,4 +67,30 @@
 #define BTN_RIGHT_PORT  GPIO_PORT_P5
 #define BTN_RIGHT_PIN   GPIO_PIN4
 
+/* =====================================================================
+ * RS485 UART (Phase 3)   -- eUSCI_A0, our debug output link
+ * ---------------------------------------------------------------------
+ * Half-duplex: the transceiver's EN pin selects direction.
+ *   RS485_EN HIGH = TX (drive the bus), LOW = RX (listen).
+ * We raise EN before sending and lower it once the last byte has fully
+ * shifted out.
+ *
+ * Baud-rate generator values below are a MATCHED SET for 9600 baud from
+ * an 8 MHz SMCLK using oversampling. If you change the baud or SMCLK, all
+ * three (UCBRx / UCBRFx / UCBRSx) must be recalculated (see the family
+ * user guide baud-rate table).
+ * ===================================================================== */
+
+#define RS485_TX_PORT   GPIO_PORT_P4      /* P4.3 = UCA0TXD */
+#define RS485_TX_PIN    GPIO_PIN3
+#define RS485_RX_PORT   GPIO_PORT_P4      /* P4.4 = UCA0RXD (used from Ph.9) */
+#define RS485_RX_PIN    GPIO_PIN4
+#define RS485_EN_PORT   GPIO_PORT_P4
+#define RS485_EN_PIN    GPIO_PIN5
+
+#define RS485_BAUD          9600UL        /* target baud rate            */
+#define RS485_BR_PRESCALAR  52            /* UCBRx  for 9600 @ 8 MHz     */
+#define RS485_BR_FIRSTMOD   1             /* UCBRFx (oversampling)       */
+#define RS485_BR_SECONDMOD  0x49          /* UCBRSx (fractional modulation) */
+
 #endif /* CONFIG_H_ */
