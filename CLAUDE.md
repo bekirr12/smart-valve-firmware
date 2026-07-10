@@ -69,6 +69,13 @@ DAC 0–3.3 V output is scaled to **0–10 V** by a non-inverting opamp (hardwar
 | ENCODER | P7.6 / TA4.1 | timer capture / pulse count |
 | SPEED | via MCP4706 I2C | 0–100 % → DAC → 0–10 V |
 
+**Confirmed signal polarities:**
+- LEDs: active-high (HIGH = on). Buttons: active-low (pull-up, pressed = LOW).
+- Motor ENABLE: active-low (LOW = enabled, HIGH = disabled/safe).
+- Motor BRAKE: active-low (LOW = brake engaged/safe, HIGH = released).
+- ±15 V EN (P3.1, LT8471): active-low (LOW = supply ON, HIGH = OFF/safe).
+- RS485 EN (P4.5): HIGH = TX (drive bus), LOW = RX (listen).
+
 #### USS (only Pair 1 active)
 | Signal | Pin | Role |
 |---|---|---|

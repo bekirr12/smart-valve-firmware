@@ -5,7 +5,7 @@
  * timing intervals, and thresholds. This file grows one section at a time
  * as each development phase is implemented (see CLAUDE.md §9 roadmap).
  *
- * Phase 1 adds the clock section only.
+ * Currently implemented: Phase 1 (clock), Phase 2 (LEDs + buttons).
  */
 
 #ifndef CONFIG_H_
@@ -32,5 +32,39 @@
 #define CONFIG_MCLK_FREQ_HZ     CONFIG_HFXT_FREQ_HZ
 #define CONFIG_SMCLK_FREQ_HZ    CONFIG_HFXT_FREQ_HZ
 #define CONFIG_ACLK_FREQ_HZ     CONFIG_LFXT_FREQ_HZ
+
+/* =====================================================================
+ * LEDs & BUTTONS (Phase 2)
+ * ---------------------------------------------------------------------
+ * Each signal is a (PORT, PIN) pair using driverlib constants, so code
+ * reads GPIO_setOutputHighOnPin(LED1_PORT, LED1_PIN), etc.
+ *
+ * Polarities (confirmed against the hardware):
+ *   - LEDs    active-high (pin HIGH = LED on).
+ *   - Buttons active-low  (wired to GND, internal pull-up, pressed = LOW).
+ *
+ * Other pins (motor, USS, RS485, ±15V, LT8490, HMI) are added in their
+ * own phases, not here.
+ * ===================================================================== */
+
+/* --- LEDs (outputs, active-high) --- */
+#define LED1_PORT       GPIO_PORT_P4
+#define LED1_PIN        GPIO_PIN2
+#define LED2_PORT       GPIO_PORT_P4
+#define LED2_PIN        GPIO_PIN1
+#define LED3_PORT       GPIO_PORT_P4
+#define LED3_PIN        GPIO_PIN0
+
+/* --- Buttons (inputs, pull-up, active-low) --- */
+#define BTN_DOWN_PORT   GPIO_PORT_P5
+#define BTN_DOWN_PIN    GPIO_PIN0
+#define BTN_SELECT_PORT GPIO_PORT_P5
+#define BTN_SELECT_PIN  GPIO_PIN1
+#define BTN_LEFT_PORT   GPIO_PORT_P5
+#define BTN_LEFT_PIN    GPIO_PIN2
+#define BTN_UP_PORT     GPIO_PORT_P5
+#define BTN_UP_PIN      GPIO_PIN3
+#define BTN_RIGHT_PORT  GPIO_PORT_P5
+#define BTN_RIGHT_PIN   GPIO_PIN4
 
 #endif /* CONFIG_H_ */
