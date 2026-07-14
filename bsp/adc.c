@@ -61,6 +61,13 @@ void adc_init(void)
 
 uint16_t adc_read_raw(uint8_t input_channel)
 {
+    /* Clear ENC before touching the memory-control register: ADC12MCTLx
+     * (the channel selection) can only be written while conversions are
+     * disabled (ENC = 0). Without this, every read after the first keeps
+     * the first channel and returns the wrong pin's value.
+     */
+    ADC12_B_disableConversions(ADC12_B_BASE, ADC12_B_COMPLETECONVERSION);
+
     /* Point memory buffer 0 at the requested channel, referenced to the
      * internal reference (+) and VSS (-).
      */

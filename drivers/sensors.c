@@ -12,6 +12,8 @@
  *   Motor I   = Vadc / (0.005 * 20)               = Vadc / 0.1
  */
 
+#include <msp430.h>
+#include "driverlib/MSP430FR5xx_6xx/driverlib.h"
 #include "config.h"
 #include "bsp/adc.h"
 #include "drivers/sensors.h"
