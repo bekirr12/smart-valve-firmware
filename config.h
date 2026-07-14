@@ -93,4 +93,37 @@
 #define RS485_BR_FIRSTMOD   1             /* UCBRFx (oversampling)       */
 #define RS485_BR_SECONDMOD  0x49          /* UCBRSx (fractional modulation) */
 
+/* =====================================================================
+ * ADC & SENSORS (Phase 4)   -- ADC12_B, internal 2.5 V reference
+ * ---------------------------------------------------------------------
+ * Five analog measurements, all single-ended against the internal 2.5 V
+ * reference. Raw 12-bit code -> volts:  Vadc = raw / 4096 * 2.5.
+ * drivers/sensors.c then applies each channel's scaling formula.
+ *
+ * Analog pins must be switched to their analog function (both SELx bits
+ * set = GPIO_TERNARY_MODULE_FUNCTION).
+ * ===================================================================== */
+
+#define ADC_VREF_VOLTS      2.5f          /* internal reference voltage   */
+#define ADC_FULL_SCALE      4096.0f       /* 12-bit ADC (2^12)            */
+
+/* ADC channel inputs (driverlib ADC12_B_INPUT_Ax constants). */
+#define ADC_PANEL_V_CH      ADC12_B_INPUT_A2    /* P1.4 */
+#define ADC_BATT_V_CH       ADC12_B_INPUT_A3    /* P1.5 */
+#define ADC_PANEL_I_CH      ADC12_B_INPUT_A11   /* P8.5 */
+#define ADC_BATT_I_CH       ADC12_B_INPUT_A12   /* P8.6 */
+#define ADC_MOTOR_I_CH      ADC12_B_INPUT_A15   /* P2.3 */
+
+/* Analog input pins (for switching the pad to analog mode). */
+#define ADC_PANEL_V_PORT    GPIO_PORT_P1
+#define ADC_PANEL_V_PIN     GPIO_PIN4
+#define ADC_BATT_V_PORT     GPIO_PORT_P1
+#define ADC_BATT_V_PIN      GPIO_PIN5
+#define ADC_PANEL_I_PORT    GPIO_PORT_P8
+#define ADC_PANEL_I_PIN     GPIO_PIN5
+#define ADC_BATT_I_PORT     GPIO_PORT_P8
+#define ADC_BATT_I_PIN      GPIO_PIN6
+#define ADC_MOTOR_I_PORT    GPIO_PORT_P2
+#define ADC_MOTOR_I_PIN     GPIO_PIN3
+
 #endif /* CONFIG_H_ */
