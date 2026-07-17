@@ -134,8 +134,29 @@
  * MEASURE_INTERVAL_S seconds, which wakes the CPU from low-power sleep.
  * ===================================================================== */
 
-#define MEASURE_INTERVAL_S   10    /* seconds between wake-ups.
+#define MEASURE_INTERVAL_S   3    /* seconds between wake-ups.
                                     * Use a small value (e.g. 3) to test
                                     * the wake cycle without waiting a minute. */
+
+/* =====================================================================
+ * I2C + MCP4706 DAC (Phase 6)   -- eUSCI_B0, motor speed reference
+ * ---------------------------------------------------------------------
+ * The MCP4706 is an 8-bit I2C DAC. Its 0-3.3 V output is scaled to
+ * 0-10 V by a hardware opamp (no code). Formula:
+ *   Vout = MCP4706_VREF_VOLTS * value / 256   (value 0-255)
+ *
+ * MUX: UCB0SDA (P1.6) and UCB0SCL (P1.7) are the SECONDARY module function
+ * (P1SEL1=1, P1SEL0=0), confirmed from the datasheet Port P1 table.
+ * ===================================================================== */
+
+#define I2C_SDA_PORT     GPIO_PORT_P1     /* P1.6 = UCB0SDA */
+#define I2C_SDA_PIN      GPIO_PIN6
+#define I2C_SCL_PORT     GPIO_PORT_P1     /* P1.7 = UCB0SCL */
+#define I2C_SCL_PIN      GPIO_PIN7
+#define I2C_PIN_MUX      GPIO_SECONDARY_MODULE_FUNCTION
+#define I2C_DATARATE     EUSCI_B_I2C_SET_DATA_RATE_100KBPS
+
+#define MCP4706_I2C_ADDR    0x60          /* A0 variant, 7-bit address    */
+#define MCP4706_VREF_VOLTS  3.3f          /* VDD = VRL reference           */
 
 #endif /* CONFIG_H_ */

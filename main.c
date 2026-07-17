@@ -3,41 +3,46 @@
 #include "config.h"
 #include "bsp/clock.h"
 #include "bsp/gpio_init.h"
-#include "bsp/timer.h"
-#include "bsp/power.h"
+#include "bsp/i2c.h"
+#include "drivers/mcp4706.h"
+
+/* Current DAC code, also visible in the CCS debugger. */
+volatile uint8_t g_dac_value;
 
 int main(void)
 {
     WDT_A_hold(WDT_A_BASE);
 
-    clock_init();   /* Phase 1: clocks (incl. LF crystal -> ACLK for RTC) */
-    gpio_init();    /* Phase 2: LEDs, buttons                             */
-    rtc_init();     /* Phase 5: 1 Hz RTC tick -> wake every interval      */
+    clock_init();   /* Phase 1: clocks        */
+    gpio_init();    /* Phase 2: LEDs, buttons */
+    i2c_init();     /* Phase 6: I2C master    */
+    mcp4706_init(); /* force config: VREF=VDD, normal, 1x */
 
-    /* Phase 5 verification:
-     * Sleep in LPM3 and let the RTC wake the CPU every MEASURE_INTERVAL_S
-     * seconds; toggle LED2 on each wake. Between wakes the current draw
-     * should drop to the LPM3 range.
-     *
-     * The check-then-sleep below runs with interrupts disabled to avoid the
-     * classic LPM race: if the RTC tick landed between "is it due?" and "go
-     * to sleep", a naive version could sleep through it. Because
-     * power_enter_sleep() sets the LPM bits and GIE in a single instruction,
-     * an interrupt pending during this window is serviced the instant we
-     * sleep -- waking us right back up -- so no wake-up is ever lost.
+    /* Phase 6 verification:
+     * Step the DAC through five codes, holding each for ~3 s. The cycle
+     * starts at 0 (first 3 s read 0 V, expected), then climbs. Measure the
+     * MCP4706 VOUT pin against Vout = 3.3 * value / 256:
+     *   0   -> 0.00 V
+     *   64  -> 0.83 V
+     *   128 -> 1.65 V
+     *   192 -> 2.48 V
+     *   255 -> 3.29 V
+     * Watch g_dac_value in the debugger to match each reading. LED1 toggles
+     * at each step.
      */
+    static const uint8_t steps[] = {0, 64, 128, 192, 255};
+    uint8_t i = 0;
+
     while (1)
     {
-        __disable_interrupt();
-        if (rtc_measurement_due())
-        {
-            __enable_interrupt();
-            rtc_clear_measurement_due();
-            GPIO_toggleOutputOnPin(LED2_PORT, LED2_PIN);
-        }
-        else
-        {
-            power_enter_sleep();   /* LPM3 + GIE; wakes on the RTC interrupt */
-        }
+        g_dac_value = steps[i];
+        mcp4706_set_value(g_dac_value);
+
+        GPIO_toggleOutputOnPin(LED1_PORT, LED1_PIN);
+        __delay_cycles(24000000);   /* ~3 s at 8 MHz MCLK */
+
+        i++;
+        if (i >= sizeof(steps))
+            i = 0;
     }
 }

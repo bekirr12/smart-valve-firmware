@@ -77,7 +77,7 @@ The firmware is built up incrementally, one hardware-testable milestone at a tim
 | 3 | RS485 UART (debug output) | ✅ Done |
 | 4 | ADC + sensor readings | ✅ Done |
 | 5 | Low-power modes + RTC wake | ✅ Done |
-| 6 | I2C + MCP4706 DAC | ⬜ Planned |
+| 6 | I2C + MCP4706 DAC | ✅ Done |
 | 7 | Motor control + position | ⬜ Planned |
 | 8 | LT8490 status (bit-bang) | ⬜ Planned |
 | 9 | RS485 protocol (Modbus-like) | ⬜ Planned |

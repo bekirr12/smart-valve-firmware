@@ -58,6 +58,16 @@ executes open/close commands and streams telemetry.
 |---|---|---|---|---|
 | P1.6 | P1.7 | eUSCI_B0 | 3.3 V | `Vout = Vref × (value/256)`, value 0–255 |
 DAC 0–3.3 V output is scaled to **0–10 V** by a non-inverting opamp (hardware, no code).
+- UCB0SDA/UCB0SCL on P1.6/P1.7 are the **SECONDARY** module function (P1SEL1=1,
+  P1SEL0=0), confirmed from the datasheet Port P1 table.
+- `mcp4706_init()` must write a config byte (`0x80` = VREF=VDD, normal power, gain 1x)
+  at startup: the shipped/EEPROM config does **not** reference VDD, so without this the
+  output stays 0 V regardless of the DAC value.
+- Write Volatile DAC Register frame (MCP47X6 Fig 6-1): `[0x00][value]`.
+- **driverlib gotcha:** `EUSCI_B_I2C_masterSendMultiByteFinish` leaves `UCTXIFG` set;
+  `i2c_write()` clears `EUSCI_B_I2C_TRANSMIT_INTERRUPT0` after each transfer, otherwise
+  only the first multi-byte transaction after init works (the next `...Start` skips its
+  TXIFG wait and writes data before the address).
 
 #### Motor Control (6 pins)
 | Signal | Pin | Notes |
@@ -295,7 +305,7 @@ Not all at once.
 | 3 ✅ | `bsp/uart` (RS485 TX) | RS485 sends "hello" |
 | 4 ✅ | `bsp/adc` + `drivers/sensors` | print V/I readings over UART |
 | 5 ✅ | `bsp/timer` (RTC) + `bsp/power` | low current, 60 s periodic wake |
-| 6 | `bsp/i2c` + `drivers/mcp4706` | measure DAC output voltage |
+| 6 ✅ | `bsp/i2c` + `drivers/mcp4706` | measure DAC output voltage |
 | 7 | `drivers/motor` | valve open/close, position tracking |
 | 8 | `drivers/lt8490` | read charger status bytes |
 | 9 | `drivers/rs485` + `app/comm_protocol` | full command/response exchange |
