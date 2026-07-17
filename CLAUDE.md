@@ -290,11 +290,11 @@ Not all at once.
 | Phase | Module(s) | On-device test |
 |---|---|---|
 | 0 ✅ | skeleton, `config.h`, folders | LED on P1.0 blinks |
-| 1 | `bsp/clock` | measure clock / blink rate |
-| 2 | `bsp/gpio_init` | LED1-3, read 5 buttons |
-| 3 | `bsp/uart` (RS485 TX) | RS485 sends "hello" |
-| 4 | `bsp/adc` + `drivers/sensors` | print V/I readings over UART |
-| 5 | `bsp/power` + RTC | low current, 60 s periodic wake |
+| 1 ✅ | `bsp/clock` | measure clock / blink rate |
+| 2 ✅ | `bsp/gpio_init` | LED1-3, read 5 buttons |
+| 3 ✅ | `bsp/uart` (RS485 TX) | RS485 sends "hello" |
+| 4 ✅ | `bsp/adc` + `drivers/sensors` | print V/I readings over UART |
+| 5 ✅ | `bsp/timer` (RTC) + `bsp/power` | low current, 60 s periodic wake |
 | 6 | `bsp/i2c` + `drivers/mcp4706` | measure DAC output voltage |
 | 7 | `drivers/motor` | valve open/close, position tracking |
 | 8 | `drivers/lt8490` | read charger status bytes |

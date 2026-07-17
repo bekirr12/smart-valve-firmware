@@ -72,11 +72,11 @@ The firmware is built up incrementally, one hardware-testable milestone at a tim
 | Phase | Focus | Status |
 |---|---|---|
 | 0 | Project skeleton + LED blink | ✅ Done |
-| 1 | Clock system (HF/LF/USS crystals) | ⬜ Planned |
-| 2 | GPIO init, LEDs, buttons | ⬜ Planned |
-| 3 | RS485 UART (debug output) | ⬜ Planned |
-| 4 | ADC + sensor readings | ⬜ Planned |
-| 5 | Low-power modes + RTC wake | ⬜ Planned |
+| 1 | Clock system (HF/LF crystals) | ✅ Done |
+| 2 | GPIO init, LEDs, buttons | ✅ Done |
+| 3 | RS485 UART (debug output) | ✅ Done |
+| 4 | ADC + sensor readings | ✅ Done |
+| 5 | Low-power modes + RTC wake | ✅ Done |
 | 6 | I2C + MCP4706 DAC | ⬜ Planned |
 | 7 | Motor control + position | ⬜ Planned |
 | 8 | LT8490 status (bit-bang) | ⬜ Planned |

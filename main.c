@@ -3,44 +3,41 @@
 #include "config.h"
 #include "bsp/clock.h"
 #include "bsp/gpio_init.h"
-#include "bsp/adc.h"
-#include "drivers/sensors.h"
-
-/*
- * Debug-view globals (temporary bring-up experiment).
- * Marked volatile so the compiler keeps them in memory and the CCS
- * Expressions/Variables view can always read the latest value.
- *   g_batt_raw      - battery raw 12-bit ADC code (0..4095)
- *   g_batt_voltage  - converted battery voltage, volts
- *   g_panel_raw     - panel raw 12-bit ADC code (0..4095)
- *   g_panel_voltage - converted panel voltage, volts
- */
-volatile uint16_t g_batt_raw;
-volatile float    g_batt_voltage;
-volatile uint16_t g_panel_raw;
-volatile float    g_panel_voltage;
+#include "bsp/timer.h"
+#include "bsp/power.h"
 
 int main(void)
 {
     WDT_A_hold(WDT_A_BASE);
 
-    clock_init();   /* Phase 1: clocks          */
-    gpio_init();    /* Phase 2: LEDs, buttons   */
-    adc_init();     /* Phase 4: ADC + reference */
+    clock_init();   /* Phase 1: clocks (incl. LF crystal -> ACLK for RTC) */
+    gpio_init();    /* Phase 2: LEDs, buttons                             */
+    rtc_init();     /* Phase 5: 1 Hz RTC tick -> wake every interval      */
 
-    /* Read the battery ADC into globals so it can be watched in the CCS
-     * debugger. Add g_batt_raw and g_batt_voltage to the Expressions view;
-     * either breakpoint on the delay line, or enable Continuous Refresh and
-     * just Run. LED1 toggles as a sign of life.
+    /* Phase 5 verification:
+     * Sleep in LPM3 and let the RTC wake the CPU every MEASURE_INTERVAL_S
+     * seconds; toggle LED2 on each wake. Between wakes the current draw
+     * should drop to the LPM3 range.
+     *
+     * The check-then-sleep below runs with interrupts disabled to avoid the
+     * classic LPM race: if the RTC tick landed between "is it due?" and "go
+     * to sleep", a naive version could sleep through it. Because
+     * power_enter_sleep() sets the LPM bits and GIE in a single instruction,
+     * an interrupt pending during this window is serviced the instant we
+     * sleep -- waking us right back up -- so no wake-up is ever lost.
      */
     while (1)
     {
-        g_batt_raw      = adc_read_raw(ADC_BATT_V_CH);
-        g_batt_voltage  = sensor_battery_voltage();
-        g_panel_raw     = adc_read_raw(ADC_PANEL_V_CH);
-        g_panel_voltage = sensor_panel_voltage();
-
-        GPIO_toggleOutputOnPin(LED1_PORT, LED1_PIN);
-        __delay_cycles(4000000);   /* ~0.5 s at 8 MHz MCLK */
+        __disable_interrupt();
+        if (rtc_measurement_due())
+        {
+            __enable_interrupt();
+            rtc_clear_measurement_due();
+            GPIO_toggleOutputOnPin(LED2_PORT, LED2_PIN);
+        }
+        else
+        {
+            power_enter_sleep();   /* LPM3 + GIE; wakes on the RTC interrupt */
+        }
     }
 }

@@ -126,4 +126,16 @@
 #define ADC_MOTOR_I_PORT    GPIO_PORT_P2
 #define ADC_MOTOR_I_PIN     GPIO_PIN3
 
+/* =====================================================================
+ * POWER MANAGEMENT + RTC (Phase 5)
+ * ---------------------------------------------------------------------
+ * The RTC (clocked from the LF crystal / ACLK) produces a 1 Hz tick; the
+ * ISR counts ticks and raises a "measurement due" flag every
+ * MEASURE_INTERVAL_S seconds, which wakes the CPU from low-power sleep.
+ * ===================================================================== */
+
+#define MEASURE_INTERVAL_S   10    /* seconds between wake-ups.
+                                    * Use a small value (e.g. 3) to test
+                                    * the wake cycle without waiting a minute. */
+
 #endif /* CONFIG_H_ */
