@@ -159,4 +159,15 @@
 #define MCP4706_I2C_ADDR    0x60          /* A0 variant, 7-bit address    */
 #define MCP4706_VREF_VOLTS  3.3f          /* VDD = VRL reference           */
 
+/* =====================================================================
+ * RS485 PROTOCOL (Phase 9)   -- modbus-like framing over the RS485 UART
+ * ---------------------------------------------------------------------
+ * Frame: [address][function][data...][CRC16_lo][CRC16_hi]
+ * CRC16 uses the Modbus polynomial (0xA001, init 0xFFFF) and is appended
+ * low byte first (Modbus convention). This device answers to one address.
+ * ===================================================================== */
+
+#define RS485_DEVICE_ADDRESS   0x01       /* this device's bus address     */
+#define RS485_MAX_FRAME        64         /* max frame length, bytes       */
+
 #endif /* CONFIG_H_ */

@@ -3,46 +3,46 @@
 #include "config.h"
 #include "bsp/clock.h"
 #include "bsp/gpio_init.h"
-#include "bsp/i2c.h"
-#include "drivers/mcp4706.h"
+#include "drivers/rs485.h"
 
-/* Current DAC code, also visible in the CCS debugger. */
-volatile uint8_t g_dac_value;
+/* Phase 9a debug-view globals (watch these in the CCS Expressions view):
+ *   g_crc_check    - CRC16 of "123456789"; the CRC-16/MODBUS standard check
+ *                    value is 0x4B37, so this must read 0x4B37.
+ *   g_frame_len    - length returned by rs485_build_frame().
+ *   g_frame_valid  - rs485_check_frame() on the intact frame  -> expect 1.
+ *   g_frame_broken - rs485_check_frame() after flipping a byte -> expect 0.
+ */
+volatile uint16_t g_crc_check;
+volatile uint8_t  g_frame_len;
+volatile uint8_t  g_frame_valid;
+volatile uint8_t  g_frame_broken;
 
 int main(void)
 {
     WDT_A_hold(WDT_A_BASE);
 
-    clock_init();   /* Phase 1: clocks        */
-    gpio_init();    /* Phase 2: LEDs, buttons */
-    i2c_init();     /* Phase 6: I2C master    */
-    mcp4706_init(); /* force config: VREF=VDD, normal, 1x */
+    clock_init();
+    gpio_init();
 
-    /* Phase 6 verification:
-     * Step the DAC through five codes, holding each for ~3 s. The cycle
-     * starts at 0 (first 3 s read 0 V, expected), then climbs. Measure the
-     * MCP4706 VOUT pin against Vout = 3.3 * value / 256:
-     *   0   -> 0.00 V
-     *   64  -> 0.83 V
-     *   128 -> 1.65 V
-     *   192 -> 2.48 V
-     *   255 -> 3.29 V
-     * Watch g_dac_value in the debugger to match each reading. LED1 toggles
-     * at each step.
-     */
-    static const uint8_t steps[] = {0, 64, 128, 192, 255};
-    uint8_t i = 0;
+    /* 1) CRC16 against the standard CRC-16/MODBUS check value. */
+    static const uint8_t check[] = {'1','2','3','4','5','6','7','8','9'};
+    g_crc_check = rs485_crc16(check, sizeof(check));   /* expect 0x4B37 */
 
+    /* 2) Build a frame, then validate it (round-trip). */
+    static const uint8_t payload[] = {0x00, 0x00, 0x00, 0x01};
+    uint8_t frame[RS485_MAX_FRAME];
+    g_frame_len = rs485_build_frame(frame, RS485_DEVICE_ADDRESS,
+                                    0x03, payload, sizeof(payload));
+    g_frame_valid = rs485_check_frame(frame, g_frame_len);   /* expect 1 */
+
+    /* 3) Corrupt one byte and confirm the CRC check now fails. */
+    frame[2] ^= 0xFF;
+    g_frame_broken = rs485_check_frame(frame, g_frame_len);   /* expect 0 */
+
+    /* Blink LED1 to show we reached the end. */
     while (1)
     {
-        g_dac_value = steps[i];
-        mcp4706_set_value(g_dac_value);
-
         GPIO_toggleOutputOnPin(LED1_PORT, LED1_PIN);
-        __delay_cycles(24000000);   /* ~3 s at 8 MHz MCLK */
-
-        i++;
-        if (i >= sizeof(steps))
-            i = 0;
+        __delay_cycles(4000000);
     }
 }

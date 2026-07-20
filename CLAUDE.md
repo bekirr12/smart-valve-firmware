@@ -313,6 +313,24 @@ Not all at once.
 | 11 | `drivers/uss_flow` + USSLib | real flow reading |
 | 12 | `drivers/hmi` | (deferred) |
 
+### 9.1 Pending Hardware Verification (parts not yet available)
+Some phases are written and software-tested but await hardware to verify on-device.
+Come back and run these checks when the parts arrive:
+
+| Needed hardware | Blocks / to verify |
+|---|---|
+| 24 V supply + motor | Phase 7 real motion, stall detection, encoder counting under load |
+| LT8490 chip | Phase 8 bit-bang STATUS decode + FAULT |
+| LT8471 chip (±15 V) | USS opamp supply enable (P3.1) + Phase 11 measurement |
+| RS485↔USB converter | Phase 3 TX and Phase 9 physical frame exchange |
+| USSLib + transducers | Phase 11 ultrasonic flow measurement |
+| HMI cable + screen data | Phase 12 screen |
+
+Software-only work (CRC, frame build/parse, register map, state-machine logic) is
+fully developed and debugger-tested without these; only the physical I/O is deferred.
+Bench tricks used meanwhile: multimeter for GPIO/DAC levels, jumper pulses on the
+encoder pin to test the counting ISR.
+
 Raw-register code appears only in Phase 7 (encoder ISR) and Phase 8 (bit-bang).
 
 ---
