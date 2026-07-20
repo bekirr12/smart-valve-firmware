@@ -53,6 +53,23 @@ encoder). Ultrasonic flow math is handled by TI's separate **USSLib**.
 
 ---
 
+## Architecture Diagrams
+
+The **final target** behavior (stubs are filled in as hardware arrives — see
+[CLAUDE.md](CLAUDE.md) §9.2):
+
+**Top-level state machine** — IDLE wakes from three sources (RTC / RS485 RX / FAULT),
+and TRANSMIT pushes telemetry to both the RS485 center link and the local HMI screen:
+
+![Top-level state machine](docs/state-machine-toplevel.svg)
+
+**MOTOR_CTRL sub-state machine** — how a valve open/close command drives the motor,
+with the four RUNNING exit conditions (stall, encoder target, new command, timeout):
+
+![Motor control flowchart](docs/motor-ctrl-flowchart.svg)
+
+---
+
 ## Build & Flash
 
 - **Toolchain:** TI Code Composer Studio (CCS) with the MSP430 compiler.
