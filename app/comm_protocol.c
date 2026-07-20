@@ -65,7 +65,7 @@ static uint8_t handle_read(const uint8_t *req, uint8_t *resp)
         data[1 + i * 2 + 1] = (uint8_t)(v & 0xFF);
     }
 
-    return rs485_build_frame(resp, RS485_DEVICE_ADDRESS, 0x03,
+    return rs485_build_frame(resp, RS485_DEVICE_ADDRESS, MODBUS_FUNC_READ_HOLDING,
                              data, (uint8_t)(1 + count * 2));
 }
 
@@ -86,7 +86,7 @@ static uint8_t handle_write(const uint8_t *req, uint8_t *resp)
     }
 
     /* Modbus write-single-register echoes the request's data field back. */
-    return rs485_build_frame(resp, RS485_DEVICE_ADDRESS, 0x06,
+    return rs485_build_frame(resp, RS485_DEVICE_ADDRESS, MODBUS_FUNC_WRITE_SINGLE,
                              &req[2], 4);
 }
 
@@ -107,12 +107,12 @@ uint8_t comm_protocol_process(const uint8_t *req, uint8_t req_len,
 
     switch (req[1])   /* function code */
     {
-        case 0x03:
+        case MODBUS_FUNC_READ_HOLDING:
             if (req_len != 8)   /* addr+func+start(2)+count(2)+CRC(2) */
                 return 0;
             return handle_read(req, resp);
 
-        case 0x06:
+        case MODBUS_FUNC_WRITE_SINGLE:
             if (req_len != 8)   /* addr+func+reg(2)+value(2)+CRC(2) */
                 return 0;
             return handle_write(req, resp);

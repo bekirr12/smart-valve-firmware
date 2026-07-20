@@ -14,22 +14,24 @@
 #include "bsp/i2c.h"
 #include "drivers/mcp4706.h"
 
+/* MCP47X6 command bytes (see the datasheet command figures):
+ *   WRITE_DAC  = [00 (cmd)][00 (PD normal)][0000] -> write volatile DAC reg
+ *   CFG_VDD_1X = [100 (cmd)][00 VREF=VDD][00 PD][0 gain 1x] -> config bits
+ */
+#define MCP4706_CMD_WRITE_DAC   0x00
+#define MCP4706_CFG_VDD_1X      0x80
+
 void mcp4706_init(void)
 {
-    /* "Write Volatile Configuration Bits" command (C2C1C0 = 100):
-     *   byte = [1 0 0][VREF1 VREF0][PD1 PD0][G]
-     *        = [1 0 0][0 0      ][0 0    ][0]  = 0x80
-     *   -> VREF = VDD, normal power, gain 1x.
-     */
-    uint8_t cfg = 0x80;
+    uint8_t cfg = MCP4706_CFG_VDD_1X;      /* VREF=VDD, normal power, gain 1x */
     i2c_write(MCP4706_I2C_ADDR, &cfg, 1);
 }
 
 void mcp4706_set_value(uint8_t value)
 {
     uint8_t frame[2];
-    frame[0] = 0x00;      /* write volatile DAC register, normal power */
-    frame[1] = value;     /* 8-bit output value                        */
+    frame[0] = MCP4706_CMD_WRITE_DAC;      /* write volatile DAC, normal power */
+    frame[1] = value;                      /* 8-bit output value               */
 
     i2c_write(MCP4706_I2C_ADDR, frame, 2);
 }

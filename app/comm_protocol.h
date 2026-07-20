@@ -17,6 +17,10 @@
 
 #include <stdint.h>
 
+/* Modbus-like function codes. */
+#define MODBUS_FUNC_READ_HOLDING   0x03   /* read holding registers  */
+#define MODBUS_FUNC_WRITE_SINGLE   0x06   /* write single register   */
+
 /* Read-register (holding register) addresses. */
 #define REG_FLOW            0x0000
 #define REG_BATT_VOLTAGE    0x0001

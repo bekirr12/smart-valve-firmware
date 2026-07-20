@@ -126,6 +126,27 @@
 #define ADC_MOTOR_I_PORT    GPIO_PORT_P2
 #define ADC_MOTOR_I_PIN     GPIO_PIN3
 
+/* --- Sensor scaling (calibration) --------------------------------------
+ * From the board's divider / shunt / gain values. drivers/sensors.c applies
+ * these to Vadc (the voltage at the ADC pin). Change these if the board's
+ * component values change.
+ *
+ *   Voltage:      V = Vadc * (Rtop + Rbot) / Rbot
+ *   Panel I:      I = (Vadc / RIMON - IBIAS) * 1000 / RSENSE
+ *   Battery I:    I = Vadc / BATT_I_DIV
+ *   Motor I:      I = Vadc / (RSHUNT * GAIN)
+ */
+#define SENSOR_PANEL_V_RTOP     75000.0f    /* panel divider top    */
+#define SENSOR_PANEL_V_RBOT     10000.0f    /* panel divider bottom */
+#define SENSOR_BATT_V_RTOP      120000.0f   /* battery divider top    */
+#define SENSOR_BATT_V_RBOT      10000.0f    /* battery divider bottom */
+#define SENSOR_PANEL_I_RIMON    21000.0f    /* panel IMON resistor    */
+#define SENSOR_PANEL_I_IBIAS    7.0e-6f     /* panel IMON bias current*/
+#define SENSOR_PANEL_I_RSENSE   0.012f      /* panel sense resistor   */
+#define SENSOR_BATT_I_DIV       0.405f      /* battery I divisor      */
+#define SENSOR_MOTOR_I_RSHUNT   0.005f      /* motor shunt resistor   */
+#define SENSOR_MOTOR_I_GAIN     20.0f       /* motor current-sense gain */
+
 /* =====================================================================
  * POWER MANAGEMENT + RTC (Phase 5)
  * ---------------------------------------------------------------------

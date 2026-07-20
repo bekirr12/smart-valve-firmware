@@ -44,7 +44,8 @@ int main(void)
     /* --- Test 1: read 2 registers from 0x0000 (function 0x03) --------- */
     {
         static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02}; /* start, count */
-        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x03, body, 4);
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS,
+                                    MODBUS_FUNC_READ_HOLDING, body, 4);
         g_read_len   = comm_protocol_process(req, req_len, resp);
         g_read_valid = rs485_check_frame(resp, g_read_len);
         g_read_reg0  = ((uint16_t)resp[3] << 8) | resp[4];      /* expect 0x1234 */
@@ -53,7 +54,8 @@ int main(void)
     /* --- Test 2: write valve command = close (function 0x06) ---------- */
     {
         static const uint8_t body[] = {0x00, 0x10, 0x00, 0x01}; /* reg 0x10 = 1 */
-        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x06, body, 4);
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS,
+                                    MODBUS_FUNC_WRITE_SINGLE, body, 4);
         g_write_len = comm_protocol_process(req, req_len, resp);
         g_valve_cmd = comm_protocol_get_valve_command();        /* expect 2 */
     }
@@ -61,14 +63,16 @@ int main(void)
     /* --- Test 3: frame for another address is ignored ----------------- */
     {
         static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02};
-        req_len = rs485_build_frame(req, 0x02, 0x03, body, 4);  /* not us */
+        req_len = rs485_build_frame(req, 0x02,                  /* not our addr */
+                                    MODBUS_FUNC_READ_HOLDING, body, 4);
         g_wrong_addr = comm_protocol_process(req, req_len, resp); /* expect 0 */
     }
 
     /* --- Test 4: corrupted frame is rejected -------------------------- */
     {
         static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02};
-        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x03, body, 4);
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS,
+                                    MODBUS_FUNC_READ_HOLDING, body, 4);
         req[3] ^= 0xFF;                                          /* corrupt */
         g_bad_crc = comm_protocol_process(req, req_len, resp);  /* expect 0 */
     }
