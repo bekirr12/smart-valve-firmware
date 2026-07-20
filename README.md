@@ -81,7 +81,7 @@ The firmware is built up incrementally, one hardware-testable milestone at a tim
 | 7 | Motor control + position | ⬜ Planned |
 | 8 | LT8490 status (bit-bang) | ⬜ Planned |
 | 9 | RS485 protocol (Modbus-like) | ✅ Done (SW) |
-| 10 | State machine integration | ⬜ Planned |
+| 10 | State machine integration | 🚧 Skeleton |
 | 11 | Ultrasonic flow (USSLib) | ⬜ Planned |
 | 12 | HMI screen | ⬜ Deferred |
 

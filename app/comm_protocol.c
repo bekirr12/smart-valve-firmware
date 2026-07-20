@@ -43,6 +43,21 @@ uint8_t comm_protocol_get_valve_command(void)
     return cmd;
 }
 
+uint8_t comm_protocol_build_report(uint8_t *out)
+{
+    /* All read registers, big-endian, as the frame data field. */
+    uint8_t data[COMM_NUM_READ_REGS * 2];
+    uint8_t i;
+    for (i = 0; i < COMM_NUM_READ_REGS; i++)
+    {
+        data[i * 2]     = (uint8_t)(s_regs[i] >> 8);
+        data[i * 2 + 1] = (uint8_t)(s_regs[i] & 0xFF);
+    }
+
+    return rs485_build_frame(out, RS485_DEVICE_ADDRESS, MODBUS_FUNC_REPORT,
+                             data, (uint8_t)(COMM_NUM_READ_REGS * 2));
+}
+
 /* Handle function 0x03 (read holding registers). Returns response length. */
 static uint8_t handle_read(const uint8_t *req, uint8_t *resp)
 {

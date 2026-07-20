@@ -309,7 +309,7 @@ Not all at once.
 | 7 | `drivers/motor` | valve open/close, position tracking |
 | 8 | `drivers/lt8490` | read charger status bytes |
 | 9 ✅(SW) | `drivers/rs485` + `app/comm_protocol` | full command/response exchange |
-| 10 | `app/state_machine` | full 60 s measure/report loop |
+| 10 🚧 | `app/state_machine` | full 60 s measure/report loop (skeleton, see §9.2) |
 | 11 | `drivers/uss_flow` + USSLib | real flow reading |
 | 12 | `drivers/hmi` | (deferred) |
 
@@ -330,6 +330,31 @@ Software-only work (CRC, frame build/parse, register map, state-machine logic) i
 fully developed and debugger-tested without these; only the physical I/O is deferred.
 Bench tricks used meanwhile: multimeter for GPIO/DAC levels, jumper pulses on the
 encoder pin to test the counting ISR.
+
+### 9.2 Phase 10 Skeleton — Status & Integration Points
+`app/state_machine.c` integrates Phases 1-6 and 9 into a running loop
+(INIT → IDLE → MEASURE → TRANSMIT → IDLE). Verified in the debugger: `g_cycle_count`
+increments each interval, `g_telem` updates from the ADC, `g_last_frame_len` = 22.
+
+**Real now:** clock/gpio/adc/i2c/uart/rtc/DAC init; IDLE sleeps in LPM1 and wakes on the
+RTC every `MEASURE_INTERVAL_S`; MEASURE reads the ADC sensors; TRANSMIT builds the
+telemetry report frame (func `0x41`) and sends it over the RS485 UART; LED1 toggles per
+cycle. The CMD_PROCESS / MOTOR_CTRL states are wired in code but never entered yet.
+
+**Stubs and how to complete each one (when its part arrives):**
+
+| Stub (in `app/state_machine.c`) | Needs | Action to integrate |
+|---|---|---|
+| `do_measure`: `flow = 0` | LT8471 + USSLib + transducers | Phase 11: enable ±15V (P3.1), settle ~10 ms, USS measure → real flow |
+| `do_measure`: `motor_speed`/`valve_position = 0` | 24 V + motor | Phase 7: read from `drivers/motor` after homing/moves |
+| `do_measure`: `lt8490_status = 0` | LT8490 chip | Phase 8: from `drivers/lt8490` bit-bang STATUS |
+| `do_motor_ctrl`: stub sets position only | 24 V + motor | Phase 7: replace with the real motor sub-state machine |
+| **RS485-RX wake path (missing entirely)** | RS485↔USB converter | enable eUSCI_A0 RX interrupt + write RX ISR + frame assembly; in `do_idle`, also wake on a "command received" flag → branch to CMD_PROCESS |
+
+**Workflow when a part arrives:** go back to that part's phase, build + bench-test the
+driver in isolation, then replace the matching stub above and re-verify the whole loop.
+
+**Note:** `MEASURE_INTERVAL_S` is currently 3 (for testing); set it to 60 for production.
 
 Raw-register code appears only in Phase 7 (encoder ISR) and Phase 8 (bit-bang).
 

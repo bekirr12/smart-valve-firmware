@@ -51,13 +51,14 @@ static void uart_send_byte(uint8_t b)
     EUSCI_A_UART_transmitData(EUSCI_A0_BASE, b);
 }
 
-void uart_send_string(const char *str)
+void uart_send_buffer(const uint8_t *data, uint16_t len)
 {
     /* Switch the transceiver to TX (drive the bus). */
     GPIO_setOutputHighOnPin(RS485_EN_PORT, RS485_EN_PIN);
 
-    while (*str != '\0')
-        uart_send_byte((uint8_t)*str++);
+    uint16_t i;
+    for (i = 0; i < len; i++)
+        uart_send_byte(data[i]);
 
     /* Wait until the last byte has completely left the shift register
      * before releasing the bus — dropping EN too early truncates it.
@@ -67,4 +68,12 @@ void uart_send_string(const char *str)
 
     /* Back to RX (listen). */
     GPIO_setOutputLowOnPin(RS485_EN_PORT, RS485_EN_PIN);
+}
+
+void uart_send_string(const char *str)
+{
+    uint16_t len = 0;
+    while (str[len] != '\0')
+        len++;
+    uart_send_buffer((const uint8_t *)str, len);
 }

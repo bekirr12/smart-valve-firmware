@@ -12,12 +12,21 @@
 #ifndef BSP_UART_H_
 #define BSP_UART_H_
 
+#include <stdint.h>
+
 /*
  * uart_init() — configure eUSCI_A0 for 9600 baud 8N1 on P4.3/P4.4, and set
  * the RS485 EN pin as an output in receive mode. Call after clock_init()
  * (needs SMCLK running).
  */
 void uart_init(void);
+
+/*
+ * uart_send_buffer() — transmit `len` raw bytes over RS485 (binary-safe,
+ * so it can carry frames containing zero bytes), managing the direction-
+ * enable pin around the transfer.
+ */
+void uart_send_buffer(const uint8_t *data, uint16_t len);
 
 /*
  * uart_send_string() — transmit a NUL-terminated string over RS485,

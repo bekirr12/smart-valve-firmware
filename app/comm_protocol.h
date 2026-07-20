@@ -18,8 +18,9 @@
 #include <stdint.h>
 
 /* Modbus-like function codes. */
-#define MODBUS_FUNC_READ_HOLDING   0x03   /* read holding registers  */
-#define MODBUS_FUNC_WRITE_SINGLE   0x06   /* write single register   */
+#define MODBUS_FUNC_READ_HOLDING   0x03   /* read holding registers        */
+#define MODBUS_FUNC_WRITE_SINGLE   0x06   /* write single register         */
+#define MODBUS_FUNC_REPORT         0x41   /* custom: unsolicited telemetry */
 
 /* Read-register (holding register) addresses. */
 #define REG_FLOW            0x0000
@@ -70,6 +71,14 @@ void comm_protocol_update_telemetry(const telemetry_t *t);
  */
 uint8_t comm_protocol_process(const uint8_t *req, uint8_t req_len,
                               uint8_t *resp);
+
+/*
+ * comm_protocol_build_report() — build an unsolicited telemetry frame
+ * carrying all read registers (function MODBUS_FUNC_REPORT), for the
+ * periodic device->center push. Writes into `out` (>= RS485_MAX_FRAME) and
+ * returns the frame length.
+ */
+uint8_t comm_protocol_build_report(uint8_t *out);
 
 /*
  * comm_protocol_get_valve_command() — return the last valve command
