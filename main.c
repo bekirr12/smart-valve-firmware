@@ -4,18 +4,24 @@
 #include "bsp/clock.h"
 #include "bsp/gpio_init.h"
 #include "drivers/rs485.h"
+#include "app/comm_protocol.h"
 
-/* Phase 9a debug-view globals (watch these in the CCS Expressions view):
- *   g_crc_check    - CRC16 of "123456789"; the CRC-16/MODBUS standard check
- *                    value is 0x4B37, so this must read 0x4B37.
- *   g_frame_len    - length returned by rs485_build_frame().
- *   g_frame_valid  - rs485_check_frame() on the intact frame  -> expect 1.
- *   g_frame_broken - rs485_check_frame() after flipping a byte -> expect 0.
+/* Phase 9b debug-view globals (watch in the CCS Expressions view):
+ *   g_read_len    - length of the 0x03 read response (expect 9)
+ *   g_read_valid  - CRC of the read response is intact (expect 1)
+ *   g_read_reg0   - first register value in the response (expect 0x1234)
+ *   g_write_len   - length of the 0x06 write response (expect 8)
+ *   g_valve_cmd   - valve command stored after the write (expect 2 = CLOSE)
+ *   g_wrong_addr  - process() on a frame for another address (expect 0)
+ *   g_bad_crc     - process() on a corrupted frame (expect 0)
  */
-volatile uint16_t g_crc_check;
-volatile uint8_t  g_frame_len;
-volatile uint8_t  g_frame_valid;
-volatile uint8_t  g_frame_broken;
+volatile uint8_t  g_read_len;
+volatile uint8_t  g_read_valid;
+volatile uint16_t g_read_reg0;
+volatile uint8_t  g_write_len;
+volatile uint8_t  g_valve_cmd;
+volatile uint8_t  g_wrong_addr;
+volatile uint8_t  g_bad_crc;
 
 int main(void)
 {
@@ -23,23 +29,50 @@ int main(void)
 
     clock_init();
     gpio_init();
+    comm_protocol_init();
 
-    /* 1) CRC16 against the standard CRC-16/MODBUS check value. */
-    static const uint8_t check[] = {'1','2','3','4','5','6','7','8','9'};
-    g_crc_check = rs485_crc16(check, sizeof(check));   /* expect 0x4B37 */
+    /* Load some telemetry so a read returns recognizable values. */
+    telemetry_t t = {0};
+    t.flow         = 0x1234;
+    t.batt_voltage = 0x5678;
+    comm_protocol_update_telemetry(&t);
 
-    /* 2) Build a frame, then validate it (round-trip). */
-    static const uint8_t payload[] = {0x00, 0x00, 0x00, 0x01};
-    uint8_t frame[RS485_MAX_FRAME];
-    g_frame_len = rs485_build_frame(frame, RS485_DEVICE_ADDRESS,
-                                    0x03, payload, sizeof(payload));
-    g_frame_valid = rs485_check_frame(frame, g_frame_len);   /* expect 1 */
+    uint8_t req[RS485_MAX_FRAME];
+    uint8_t resp[RS485_MAX_FRAME];
+    uint8_t req_len;
 
-    /* 3) Corrupt one byte and confirm the CRC check now fails. */
-    frame[2] ^= 0xFF;
-    g_frame_broken = rs485_check_frame(frame, g_frame_len);   /* expect 0 */
+    /* --- Test 1: read 2 registers from 0x0000 (function 0x03) --------- */
+    {
+        static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02}; /* start, count */
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x03, body, 4);
+        g_read_len   = comm_protocol_process(req, req_len, resp);
+        g_read_valid = rs485_check_frame(resp, g_read_len);
+        g_read_reg0  = ((uint16_t)resp[3] << 8) | resp[4];      /* expect 0x1234 */
+    }
 
-    /* Blink LED1 to show we reached the end. */
+    /* --- Test 2: write valve command = close (function 0x06) ---------- */
+    {
+        static const uint8_t body[] = {0x00, 0x10, 0x00, 0x01}; /* reg 0x10 = 1 */
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x06, body, 4);
+        g_write_len = comm_protocol_process(req, req_len, resp);
+        g_valve_cmd = comm_protocol_get_valve_command();        /* expect 2 */
+    }
+
+    /* --- Test 3: frame for another address is ignored ----------------- */
+    {
+        static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02};
+        req_len = rs485_build_frame(req, 0x02, 0x03, body, 4);  /* not us */
+        g_wrong_addr = comm_protocol_process(req, req_len, resp); /* expect 0 */
+    }
+
+    /* --- Test 4: corrupted frame is rejected -------------------------- */
+    {
+        static const uint8_t body[] = {0x00, 0x00, 0x00, 0x02};
+        req_len = rs485_build_frame(req, RS485_DEVICE_ADDRESS, 0x03, body, 4);
+        req[3] ^= 0xFF;                                          /* corrupt */
+        g_bad_crc = comm_protocol_process(req, req_len, resp);  /* expect 0 */
+    }
+
     while (1)
     {
         GPIO_toggleOutputOnPin(LED1_PORT, LED1_PIN);

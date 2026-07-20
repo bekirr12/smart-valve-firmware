@@ -308,7 +308,7 @@ Not all at once.
 | 6 ✅ | `bsp/i2c` + `drivers/mcp4706` | measure DAC output voltage |
 | 7 | `drivers/motor` | valve open/close, position tracking |
 | 8 | `drivers/lt8490` | read charger status bytes |
-| 9 | `drivers/rs485` + `app/comm_protocol` | full command/response exchange |
+| 9 ✅(SW) | `drivers/rs485` + `app/comm_protocol` | full command/response exchange |
 | 10 | `app/state_machine` | full 60 s measure/report loop |
 | 11 | `drivers/uss_flow` + USSLib | real flow reading |
 | 12 | `drivers/hmi` | (deferred) |
