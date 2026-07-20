@@ -35,7 +35,7 @@
 
   <path class="e" marker-end="url(#a)" d="M190,48 L341,60"/>
   <path class="e" marker-end="url(#a)" d="M385,106 V148 H170 V174"/>
-  <text class="el" x="186" y="140">RTC · 60 sn</text>
+  <text class="el" x="186" y="140">RTC · 60 s</text>
   <path class="e" marker-end="url(#a)" d="M505,106 V148 H722 V174"/>
   <text class="el" x="612" y="140">RS485 RX</text>
   <path class="e" marker-end="url(#a)" d="M445,106 V438"/>
@@ -46,59 +46,59 @@
 
   <path class="e" marker-end="url(#a)" d="M120,336 V390"/>
   <path class="d" marker-end="url(#am)" d="M232,336 V390"/>
-  <text class="rl" x="238" y="366">yerel</text>
+  <text class="rl" x="238" y="366">local</text>
 
   <path class="e" marker-end="url(#a)" d="M70,308 H30 V66 H343"/>
-  <text class="rl" x="14" y="250" transform="rotate(-90 14 250)">komut yok → IDLE (varsa CMD_PROCESS)</text>
+  <text class="rl" x="14" y="250" transform="rotate(-90 14 250)">no command → IDLE (else CMD_PROCESS)</text>
   <path class="e" marker-end="url(#a)" d="M825,308 H854 V66 H547"/>
   <text class="rl" x="868" y="230" transform="rotate(-90 868 230)">→ IDLE</text>
   <path class="e" marker-end="url(#a)" d="M475,438 V104"/>
 
   <rect class="box" x="40" y="24" width="150" height="48" rx="9"/>
   <text class="ttl" x="115" y="46" text-anchor="middle">INIT</text>
-  <text class="sub" x="115" y="62" text-anchor="middle">kur · FRAM homing</text>
+  <text class="sub" x="115" y="62" text-anchor="middle">init · FRAM homing</text>
 
   <rect class="box" x="345" y="30" width="200" height="76" rx="10"/>
   <text class="ttl" x="445" y="60" text-anchor="middle">IDLE</text>
-  <text class="sub" x="445" y="78" text-anchor="middle">uyku (LPM1)</text>
-  <text class="sub" x="445" y="93" text-anchor="middle">3 uyanma kaynağı ↓</text>
+  <text class="sub" x="445" y="78" text-anchor="middle">sleep (LPM1)</text>
+  <text class="sub" x="445" y="93" text-anchor="middle">3 wake sources ↓</text>
 
   <rect class="box" x="70" y="174" width="200" height="66" rx="10"/>
   <text class="ttl" x="170" y="203" text-anchor="middle">MEASURE</text>
   <text class="sub" x="170" y="221" text-anchor="middle">±15V → USS → ADC</text>
-  <text class="sub" x="170" y="235" text-anchor="middle">debi + V/I</text>
+  <text class="sub" x="170" y="235" text-anchor="middle">flow + V/I</text>
 
   <rect class="box" x="70" y="280" width="200" height="56" rx="10"/>
   <text class="ttl" x="170" y="304" text-anchor="middle">TRANSMIT</text>
-  <text class="sub" x="170" y="322" text-anchor="middle">telemetriyi 2 yere yolla</text>
+  <text class="sub" x="170" y="322" text-anchor="middle">push telemetry to 2 sinks</text>
 
   <rect class="box" x="40" y="390" width="150" height="52" rx="9"/>
-  <text class="ot" x="115" y="412" text-anchor="middle">RS485 → MERKEZ</text>
-  <text class="os" x="115" y="429" text-anchor="middle">eUSCI_A0 · uzak</text>
+  <text class="ot" x="115" y="412" text-anchor="middle">RS485 → CENTER</text>
+  <text class="os" x="115" y="429" text-anchor="middle">eUSCI_A0 · remote</text>
 
   <rect class="stub" x="200" y="390" width="160" height="52" rx="9"/>
-  <text class="stt" x="280" y="412" text-anchor="middle">HMI → EKRAN</text>
-  <text class="sst" x="280" y="429" text-anchor="middle">eUSCI_A2 · yerel · stub</text>
+  <text class="stt" x="280" y="412" text-anchor="middle">HMI → SCREEN</text>
+  <text class="sst" x="280" y="429" text-anchor="middle">eUSCI_A2 · local · stub</text>
 
   <rect class="box" x="620" y="174" width="205" height="66" rx="10"/>
   <text class="ttl" x="722" y="203" text-anchor="middle">CMD_PROCESS</text>
-  <text class="sub" x="722" y="221" text-anchor="middle">paketi çöz</text>
-  <text class="sub" x="722" y="235" text-anchor="middle">aç / kapat</text>
+  <text class="sub" x="722" y="221" text-anchor="middle">parse packet</text>
+  <text class="sub" x="722" y="235" text-anchor="middle">open / close</text>
 
   <rect class="box" x="620" y="280" width="205" height="56" rx="10"/>
   <text class="ttl" x="722" y="304" text-anchor="middle">MOTOR_CTRL</text>
-  <text class="sub" x="722" y="322" text-anchor="middle">vana motoru (alt-makine)</text>
+  <text class="sub" x="722" y="322" text-anchor="middle">valve motor (sub-machine)</text>
 
   <rect class="box" x="360" y="438" width="200" height="52" rx="10"/>
   <text class="ttl" x="460" y="460" text-anchor="middle">FAULT_HANDLE</text>
-  <text class="sub" x="460" y="478" text-anchor="middle">hatayı merkeze bildir</text>
+  <text class="sub" x="460" y="478" text-anchor="middle">report fault to center</text>
 
   <rect class="stub" x="620" y="390" width="205" height="58" rx="10"/>
-  <text class="stt" x="722" y="413" text-anchor="middle">Arka plan ISR</text>
-  <text class="sst" x="722" y="431" text-anchor="middle">LT8490 STATUS · P2.1 bit-bang → telemetri</text>
+  <text class="stt" x="722" y="413" text-anchor="middle">Background ISR</text>
+  <text class="sst" x="722" y="431" text-anchor="middle">LT8490 STATUS · P2.1 bit-bang → telemetry</text>
 
   <rect class="box" x="40" y="512" width="24" height="15" rx="4"/>
-  <text class="lg" x="72" y="524">gerçek durum / çıkış</text>
+  <text class="lg" x="72" y="524">real state / output</text>
   <rect class="stub" x="250" y="512" width="24" height="15" rx="4"/>
-  <text class="lg" x="282" y="524">stub (parça bekliyor)</text>
+  <text class="lg" x="282" y="524">stub (awaiting part)</text>
 </svg>

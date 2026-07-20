@@ -37,56 +37,56 @@
   <path class="e" marker-end="url(#a)" d="M290,252 V280"/>
   <path class="e" marker-end="url(#a)" d="M290,346 V372"/>
   <path class="e" marker-end="url(#a)" d="M290,438 V470"/>
-  <text class="el" x="300" y="460">① stall (akım↑)  ② encoder = hedef</text>
+  <text class="el" x="300" y="460">① stall (current↑)  ② encoder = target</text>
   <path class="e" marker-end="url(#a)" d="M290,526 V554"/>
   <path class="e" marker-end="url(#a)" d="M290,614 V642"/>
 
   <path class="e" marker-end="url(#a)" d="M262,405 H120 V52 H168"/>
-  <text class="el" x="106" y="240" transform="rotate(-90 106 240)">③ yeni komut → yön değiştir</text>
+  <text class="el" x="106" y="240" transform="rotate(-90 106 240)">③ new command → reverse</text>
 
   <path class="d" marker-end="url(#am)" d="M318,405 H560 V440"/>
   <text class="rl" x="400" y="398">④ timeout</text>
 
   <path class="d" marker-end="url(#am)" d="M410,583 H620 V500"/>
-  <text class="rl" x="470" y="576">uyuşmazsa</text>
+  <text class="rl" x="470" y="576">on mismatch</text>
 
   <rect class="box" x="170" y="26" width="240" height="54" rx="9"/>
   <text class="ttl" x="290" y="49" text-anchor="middle">BRAKE_FIRST</text>
-  <text class="sub" x="290" y="67" text-anchor="middle">50 ms fren (önce dur)</text>
+  <text class="sub" x="290" y="67" text-anchor="middle">50 ms brake (stop first)</text>
 
   <rect class="box" x="170" y="112" width="240" height="54" rx="9"/>
   <text class="ttl" x="290" y="135" text-anchor="middle">SET_DIRECTION</text>
-  <text class="sub" x="290" y="153" text-anchor="middle">DIR pini (aç / kapat)</text>
+  <text class="sub" x="290" y="153" text-anchor="middle">DIR pin (open / close)</text>
 
   <rect class="box" x="170" y="198" width="240" height="54" rx="9"/>
   <text class="ttl" x="290" y="221" text-anchor="middle">ACCELERATE</text>
-  <text class="sub" x="290" y="239" text-anchor="middle">DAC hız rampası</text>
+  <text class="sub" x="290" y="239" text-anchor="middle">DAC speed ramp</text>
 
   <rect class="box" x="170" y="284" width="240" height="62" rx="9"/>
   <text class="ttl" x="290" y="311" text-anchor="middle">RUNNING</text>
-  <text class="sub" x="290" y="330" text-anchor="middle">her döngü koşulları poll et</text>
+  <text class="sub" x="290" y="330" text-anchor="middle">poll conditions each loop</text>
 
   <polygon class="dia" points="290,372 330,405 290,438 250,405"/>
-  <text class="sub" x="290" y="409" text-anchor="middle">çıkış?</text>
+  <text class="sub" x="290" y="409" text-anchor="middle">exit?</text>
 
   <rect class="box" x="170" y="470" width="240" height="54" rx="9"/>
   <text class="ttl" x="290" y="493" text-anchor="middle">BRAKE_STOP</text>
-  <text class="sub" x="290" y="511" text-anchor="middle">DAC=0, fren</text>
+  <text class="sub" x="290" y="511" text-anchor="middle">DAC=0, brake</text>
 
   <rect class="box" x="170" y="556" width="240" height="58" rx="9"/>
   <text class="ttl" x="290" y="581" text-anchor="middle">VERIFY</text>
-  <text class="sub" x="290" y="599" text-anchor="middle">stall ↔ encoder çapraz kontrol</text>
+  <text class="sub" x="290" y="599" text-anchor="middle">stall ↔ encoder cross-check</text>
 
   <rect class="box" x="170" y="642" width="240" height="50" rx="9"/>
   <text class="ttl" x="290" y="663" text-anchor="middle">DONE</text>
-  <text class="sub" x="290" y="681" text-anchor="middle">pozisyon → FRAM → IDLE</text>
+  <text class="sub" x="290" y="681" text-anchor="middle">position → FRAM → IDLE</text>
 
   <rect class="warn" x="500" y="440" width="200" height="60" rx="9"/>
   <text class="ftl" x="600" y="465" text-anchor="middle">FAULT</text>
-  <text class="fsub" x="600" y="483" text-anchor="middle">güvenli durdurma + bildir</text>
+  <text class="fsub" x="600" y="483" text-anchor="middle">safe-stop + report</text>
 
   <rect class="box" x="500" y="30" width="24" height="15" rx="4"/>
-  <text class="lg" x="532" y="42">normal akış</text>
+  <text class="lg" x="532" y="42">normal flow</text>
   <rect class="warn" x="500" y="56" width="24" height="15" rx="4"/>
-  <text class="lg" x="532" y="68">hata / istisna</text>
+  <text class="lg" x="532" y="68">fault / exception</text>
 </svg>
