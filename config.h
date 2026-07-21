@@ -229,4 +229,19 @@
 #define HMI_MAX_FRAME        64           /* max Giraffe frame, bytes    */
 #define HMI_DEFAULT_BRIGHTNESS  60        /* 0-100, startup backlight    */
 
+/* CRC16-CCITT on the HMI link. MUST match "CRC Enable" in the Giraffe IDE
+ * project; the vendor examples run with it off, so we start disabled. */
+#define HMI_CRC_ENABLED      0
+
+/* Screen layout IDs — FILL IN after the GUI is built in the Giraffe IDE.
+ * Every label/widget there gets a page ID and a control ID; put them here
+ * and then enable the writes in hmi_update(). */
+#define HMI_PAGE_MAIN        0            /* TODO: main page view ID     */
+#define HMI_ID_FLOW          0            /* TODO: flow label            */
+#define HMI_ID_BATT_V        0            /* TODO: battery voltage label */
+#define HMI_ID_BATT_I        0            /* TODO: battery current label */
+#define HMI_ID_PANEL_V       0            /* TODO: panel voltage label   */
+#define HMI_ID_PANEL_I       0            /* TODO: panel current label   */
+#define HMI_ID_VALVE_POS     0            /* TODO: valve position label  */
+
 #endif /* CONFIG_H_ */

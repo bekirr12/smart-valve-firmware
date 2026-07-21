@@ -150,11 +150,70 @@ Only PD1/PD2 and S1/S3 are used (Pair 1). PD/S truth tables from TIDA-01486.
 - `CRC16` is **optional** — the vendor examples omit it; confirm whether it is enabled.
 - A write is answered with `00` = success, non-zero = failure (the reply can be disabled).
 
-Known commands: read driver version `5A A5 04 11 B0 00 02`; set backlight brightness
-`5A A5 04 22 B0 02 <level>`.
+### 2.3 HMI Instruction Set (Giraffe) — the parts we use
 
-**Still needed from the vendor:** the full instruction table for writing text/number
-widgets and switching pages, plus whether CRC is enabled by default.
+Full manual: *HMI Instruction Set Properties* (docs.giraffeide.com). Only what this
+project needs is summarised here.
+
+**CRC16 is CCITT / XMODEM** — polynomial `0x1021`, init `0x0000`, MSB-first. This is
+**not** the Modbus CRC used on the RS485 link, so `drivers/hmi` needs its own routine;
+do not reuse `rs485_crc16()`. CRC can be turned on/off in the IDE project.
+
+**Instruction types:** `B0` = system, `B1` = view (pages), `B2` = ctrl (widgets).
+
+**System (0xB0)** — data = function command + parameters
+
+| Cmd | R/W | Parameters | Use for us |
+|---|---|---|---|
+| `00` | R | in u8 (0=APP, 1=UI, 2=Driver) → out string | version read = link test |
+| `01` | R | screen auto-sends u16 `AA BB` on power-up | detect screen restart |
+| `01` | W | u16 `CC DD` | reset the screen |
+| `02` | R/W | u8 0–100 | backlight brightness |
+| `03` | R/W | u8 beeps, u16 interval ms, u16 duration ms | buzzer → fault alarm |
+| `05` | R/W | screensaver page, standby time, standby brightness, screen-off time, screen-off brightness, activation brightness, activation page | auto screen-off (**power**) |
+| `06 01` | R/W | u8: 1 = enter standby, 0 = exit | manual standby (**power**) |
+
+**View (0xB1)**
+
+| Cmd | R/W | Parameters | Use |
+|---|---|---|---|
+| `00` | W | u16 view ID | switch page |
+| `01` | R | in u8 layer (0 UI, 1 status, 2 top) → u16 view ID | read current page |
+
+**Ctrl (0xB2)** — data = control type (u8) + function cmd (u8) + page ID (u16) +
+control ID (u16) + parameters
+
+| Control type | Cmd | Parameters | Use |
+|---|---|---|---|
+| `0x00` Label | `00` | string (NUL-terminated) | **write text — our main value display** |
+| `0x00` Label | `01` | u32 `0xRRGGBB` | text colour (e.g. red on fault) |
+| `0xF0` Common | `00` | u8 1 = hide, 0 = show | show/hide a widget |
+| `0x06` Bar | `01` | s16 | progress value (battery %) |
+| `0x05` Arc | `03` | s16 | gauge value (flow) |
+| `0x01` Button | `04` | u8 state | button state |
+
+Example — write `"12.3"` into label ID 5 on page 1:
+```
+5A A5 0D 22 B2 00 00 00 01 00 05 31 32 2E 33 00
+      |  |  |  |  |  |     |     |
+      |  |  |  |  |  |     |     +-- "12.3" + 00 terminator
+      |  |  |  |  |  +-----+-------- page ID 0x0001, control ID 0x0005
+      |  |  |  |  +----------------- function 00 = text content
+      |  |  |  +-------------------- control type 00 = Label
+      |  |  +----------------------- type B2 = ctrl
+      |  +-------------------------- 22 = write
+      +----------------------------- LEN 0x0D = op + type + 11 payload bytes
+```
+
+**Multi-byte order:** u16/u32 appear MSB-first (the reset identifier is sent as `AA BB`).
+Confirm on hardware with the first successful write.
+
+**IDE project settings that must match the firmware** (otherwise nothing works):
+- ⚠️ **"HMI Enable" is OFF by default — it must be turned on in the project.**
+- Baud 115200, frame header `5A A5`, byte size 8, no parity, 1 stop bit.
+- **CRC Enable** — pick one and make the firmware match.
+- **Write Command Return Report** — if on, the screen ACKs every write (`00` = success).
+- **Event Dispatch Mode** — needed only if we later want touch/button events.
 
 **Power — important:** 5 V @ **480 mA** at full brightness, **190 mA** with the backlight
 off. That is ~1 W even when dark, versus a ~2.4 mW sleep budget, so the screen dominates
@@ -403,7 +462,36 @@ driver in isolation, then replace the matching stub above and re-verify the whol
 
 | Change | Why |
 |---|---|
-| **Load switch (P-MOSFET) on the HMI 5 V rail**, driven by a spare MCU GPIO | The screen draws 190–480 mA continuously and today cannot be powered down from firmware — none of the connector's GPIOs (PE9/PE8/PE15/PE11) switch its supply; PE15 only mutes the audio amp. With a load switch the firmware could keep the screen off and wake it on a button press with an auto-off timeout. **Deferred:** for now the screen stays powered whenever the board is, and we only use the backlight-brightness command to reduce draw. |
+| **Load switch (P-MOSFET) on the HMI 5 V rail**, driven by a spare MCU GPIO | The screen draws 190–480 mA continuously and today cannot be powered down from firmware — none of the connector's GPIOs (PE9/PE8/PE15/PE11) switch its supply; PE15 only mutes the audio amp. With a load switch the firmware could keep the screen off and wake it on a button press with an auto-off timeout. **Deferred:** for now the screen stays powered whenever the board is; use the backlight-brightness and standby commands (§2.3) to reduce draw. |
+
+### 9.4 Phase 12 (HMI) — Status & Next Steps
+
+**Done — no cable required:**
+- `bsp/uart`: eUSCI_A2 on P7.0/P7.1 (PRIMARY mux, Table 9-35), 115200 8N1 →
+  `uart_hmi_init()` / `uart_hmi_send()`.
+- `bsp/gpio_init`: screen control lines to safe states (AUDIO-PA-EN HIGH = audio off).
+- `drivers/hmi`: CRC-16/CCITT, frame builder, and the commands we need —
+  brightness, standby, buzzer, page switch (`hmi_show_page`), label text
+  (`hmi_set_label_text`), version read (`hmi_request_version`).
+- Instruction set captured in §2.3.
+
+**Next, in order:**
+1. **Build the screen GUI in the Giraffe IDE** (PC only, no cable). Suggested pages:
+   main (flow, valve state, battery), power (battery/panel V & I, charger stage),
+   diagnostics (motor current/speed, faults).
+2. In the IDE project settings: ⚠️ **turn "HMI Enable" ON** (off by default), baud
+   115200, header `5A A5`, 8N1, and leave **CRC Enable off** to match
+   `HMI_CRC_ENABLED 0` (or turn both on together).
+3. Note each label's **page ID and control ID** → fill the `HMI_ID_*` / `HMI_PAGE_*`
+   defines in `config.h`.
+4. Enable the writes inside `hmi_update()` — the `format_x100()` helper and the
+   label-write call are already there, only the IDs are missing.
+5. **When the cable arrives:** first `hmi_request_version()` as a link test (a reply
+   proves wiring, baud and framing), then one label write, then the full update.
+
+**To confirm on hardware / with the vendor:**
+- Multi-byte (u16) order — assumed MSB-first from the `AA BB` reset identifier.
+- Whether "Write Command Return Report" is enabled (screen ACKs every write with `00`).
 
 Raw-register code appears only in Phase 7 (encoder ISR) and Phase 8 (bit-bang).
 
