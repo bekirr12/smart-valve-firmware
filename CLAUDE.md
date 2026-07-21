@@ -129,6 +129,38 @@ Only PD1/PD2 and S1/S3 are used (Pair 1). PD/S truth tables from TIDA-01486.
 | LF | 32.768 kHz | ACLK / RTC / LPM wakeup |
 | USS | 8 MHz | USS module PLL |
 
+### 2.2 HMI Screen Module — TY040HDL04NF ("Giraffe" protocol)
+
+- 4.0" UART HMI module with its own controller. The GUI is designed in the **Giraffe IDE**
+  on a PC and loaded to the module over **USB-C**.
+- Link: **3.3 V TTL UART, 8N1, 115200 baud** (supports 2400–115200) → connects directly to
+  the MSP430 (eUSCI_A2 on P7.0/P7.1); **no level shifter needed**.
+- Extra connector lines: PE9 (generic GPIO), PE8 (485-DIR), PE15 (**AUDIO-PA-EN, HIGH =
+  audio off** — keep it high), PE11 (SPK to the audio amp).
+
+**Frame format**
+```
+5A A5 | LEN | R/W | TYPE | CMD | DATA | [CRC16]
+```
+- `5A A5` fixed header.
+- `LEN` = byte count from `R/W` through `DATA` (**CRC excluded**). If the first length byte
+  has bit 7 set (≥ 0x80), the length field is 2 bytes instead of 1.
+- `R/W`: `11` = read, `22` = write.
+- `TYPE`: instruction group (`B0` = system).
+- `CRC16` is **optional** — the vendor examples omit it; confirm whether it is enabled.
+- A write is answered with `00` = success, non-zero = failure (the reply can be disabled).
+
+Known commands: read driver version `5A A5 04 11 B0 00 02`; set backlight brightness
+`5A A5 04 22 B0 02 <level>`.
+
+**Still needed from the vendor:** the full instruction table for writing text/number
+widgets and switching pages, plus whether CRC is enabled by default.
+
+**Power — important:** 5 V @ **480 mA** at full brightness, **190 mA** with the backlight
+off. That is ~1 W even when dark, versus a ~2.4 mW sleep budget, so the screen dominates
+the power profile. There is no firmware-controlled power switch today (see §4 and §9.3);
+for now this is accepted.
+
 ---
 
 ## 3. Firmware Architecture
@@ -189,6 +221,11 @@ app/                → application logic
 - The RTC runs independently and fires every `MEASURE_INTERVAL_S` regardless of the
   previous cycle's duration (no self-reset). Its ISR only sets a `measurement_due` flag;
   the main loop acts on it.
+
+- **HMI screen caveat:** whenever the screen is connected it draws **190–480 mA
+  continuously** and dominates the power budget — there is no firmware-controlled power
+  switch yet (planned, §9.3). The backlight can be dimmed/turned off over UART, which
+  drops 480 mA to 190 mA; the module itself still draws the rest. Accepted for now.
 
 ### Approximate current budget
 | State | Actual mode | Current |
@@ -311,7 +348,7 @@ Not all at once.
 | 9 ✅(SW) | `drivers/rs485` + `app/comm_protocol` | full command/response exchange |
 | 10 🚧 | `app/state_machine` | full 60 s measure/report loop (skeleton, see §9.2) |
 | 11 | `drivers/uss_flow` + USSLib | real flow reading |
-| 12 | `drivers/hmi` | (deferred) |
+| 12 🚧 | `drivers/hmi` (Giraffe, §2.2) | telemetry shown on the screen |
 
 ### 9.1 Pending Hardware Verification (parts not yet available)
 Some phases are written and software-tested but await hardware to verify on-device.
@@ -355,6 +392,12 @@ cycle. The CMD_PROCESS / MOTOR_CTRL states are wired in code but never entered y
 driver in isolation, then replace the matching stub above and re-verify the whole loop.
 
 **Note:** `MEASURE_INTERVAL_S` is currently 3 (for testing); set it to 60 for production.
+
+### 9.3 Planned Hardware Revisions (not built yet)
+
+| Change | Why |
+|---|---|
+| **Load switch (P-MOSFET) on the HMI 5 V rail**, driven by a spare MCU GPIO | The screen draws 190–480 mA continuously and today cannot be powered down from firmware — none of the connector's GPIOs (PE9/PE8/PE15/PE11) switch its supply; PE15 only mutes the audio amp. With a load switch the firmware could keep the screen off and wake it on a button press with an auto-off timeout. **Deferred:** for now the screen stays powered whenever the board is, and we only use the backlight-brightness command to reduce draw. |
 
 Raw-register code appears only in Phase 7 (encoder ISR) and Phase 8 (bit-bang).
 
