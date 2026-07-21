@@ -34,4 +34,22 @@ void gpio_init(void)
     GPIO_setAsInputPinWithPullUpResistor(BTN_LEFT_PORT,   BTN_LEFT_PIN);
     GPIO_setAsInputPinWithPullUpResistor(BTN_UP_PORT,     BTN_UP_PIN);
     GPIO_setAsInputPinWithPullUpResistor(BTN_RIGHT_PORT,  BTN_RIGHT_PIN);
+
+    /* --- HMI screen control lines (Phase 12) ------------------------
+     * AUDIO-PA-EN is active-low for audio, so drive it HIGH to keep the
+     * screen's audio amplifier OFF (saves a little current and avoids
+     * spurious noise). The others start low.
+     * (P7.0/P7.1 are the HMI UART and are configured in uart_hmi_init.)
+     */
+    GPIO_setAsOutputPin(HMI_AUDIO_EN_PORT, HMI_AUDIO_EN_PIN);
+    GPIO_setOutputHighOnPin(HMI_AUDIO_EN_PORT, HMI_AUDIO_EN_PIN);  /* audio off */
+
+    GPIO_setAsOutputPin(HMI_SPK_PORT, HMI_SPK_PIN);
+    GPIO_setOutputLowOnPin(HMI_SPK_PORT, HMI_SPK_PIN);
+
+    GPIO_setAsOutputPin(HMI_PE9_PORT, HMI_PE9_PIN);
+    GPIO_setOutputLowOnPin(HMI_PE9_PORT, HMI_PE9_PIN);
+
+    GPIO_setAsOutputPin(HMI_PE8_PORT, HMI_PE8_PIN);
+    GPIO_setOutputLowOnPin(HMI_PE8_PORT, HMI_PE8_PIN);
 }

@@ -1,7 +1,8 @@
 /*
- * bsp/uart.c — RS485 UART (eUSCI_A0) implementation, transmit path.
+ * bsp/uart.c — RS485 (eUSCI_A0) and HMI (eUSCI_A2) UART links.
  *
- * See bsp/uart.h. Baud generator values live in config.h.
+ * See bsp/uart.h. Baud generator values live in config.h; each is a matched
+ * set (UCBRx / UCBRFx / UCBRSx) for its baud rate from the 8 MHz SMCLK.
  */
 
 #include <msp430.h>
@@ -9,28 +10,42 @@
 #include "config.h"
 #include "bsp/uart.h"
 
-void uart_init(void)
+/* Shared helper: block until the given eUSCI_A can accept a byte, then
+ * write it. */
+static void uart_put(uint16_t base, uint8_t b)
 {
-    /* --- Direction-enable pin: output, start in RX (listen) mode ---- */
-    GPIO_setAsOutputPin(RS485_EN_PORT, RS485_EN_PIN);
-    GPIO_setOutputLowOnPin(RS485_EN_PORT, RS485_EN_PIN);   /* RX */
+    while (!EUSCI_A_UART_getInterruptStatus(
+                base, EUSCI_A_UART_TRANSMIT_INTERRUPT_FLAG))
+        ;
+    EUSCI_A_UART_transmitData(base, b);
+}
 
-    /* --- Route P4.3/P4.4 to the eUSCI_A0 UART function --------------
-     * UCA0TXD / UCA0RXD are the primary module function on these pins.
-     */
+/* Shared helper: wait until the last byte has fully left the shift register. */
+static void uart_wait_idle(uint16_t base)
+{
+    while (EUSCI_A_UART_queryStatusFlags(base, EUSCI_A_UART_BUSY))
+        ;
+}
+
+/* ===================== RS485 — eUSCI_A0 ============================== */
+
+void uart_rs485_init(void)
+{
+    /* Direction-enable pin: output, start in RX (listen) mode. */
+    GPIO_setAsOutputPin(RS485_EN_PORT, RS485_EN_PIN);
+    GPIO_setOutputLowOnPin(RS485_EN_PORT, RS485_EN_PIN);
+
+    /* UCA0TXD / UCA0RXD are the primary module function on P4.3/P4.4. */
     GPIO_setAsPeripheralModuleFunctionOutputPin(
         RS485_TX_PORT, RS485_TX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
     GPIO_setAsPeripheralModuleFunctionInputPin(
         RS485_RX_PORT, RS485_RX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
 
-    /* --- Configure the UART: 9600 baud, 8 data bits, no parity, 1 stop
-     * clocked from SMCLK (8 MHz), using oversampling for a cleaner baud.
-     */
     EUSCI_A_UART_initParam param = {0};
     param.selectClockSource   = EUSCI_A_UART_CLOCKSOURCE_SMCLK;
-    param.clockPrescalar      = RS485_BR_PRESCALAR;   /* UCBRx  */
-    param.firstModReg         = RS485_BR_FIRSTMOD;    /* UCBRFx */
-    param.secondModReg        = RS485_BR_SECONDMOD;   /* UCBRSx */
+    param.clockPrescalar      = RS485_BR_PRESCALAR;
+    param.firstModReg         = RS485_BR_FIRSTMOD;
+    param.secondModReg        = RS485_BR_SECONDMOD;
     param.parity              = EUSCI_A_UART_NO_PARITY;
     param.msborLsbFirst       = EUSCI_A_UART_LSB_FIRST;
     param.numberofStopBits    = EUSCI_A_UART_ONE_STOP_BIT;
@@ -41,39 +56,61 @@ void uart_init(void)
     EUSCI_A_UART_enable(EUSCI_A0_BASE);
 }
 
-/* Send one byte, waiting until the TX buffer can accept it. */
-static void uart_send_byte(uint8_t b)
+void uart_rs485_send(const uint8_t *data, uint16_t len)
 {
-    /* Wait until the transmit buffer is empty (TXIFG set). */
-    while (!EUSCI_A_UART_getInterruptStatus(
-                EUSCI_A0_BASE, EUSCI_A_UART_TRANSMIT_INTERRUPT_FLAG))
-        ;
-    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, b);
-}
-
-void uart_send_buffer(const uint8_t *data, uint16_t len)
-{
-    /* Switch the transceiver to TX (drive the bus). */
+    /* Drive the bus. */
     GPIO_setOutputHighOnPin(RS485_EN_PORT, RS485_EN_PIN);
 
     uint16_t i;
     for (i = 0; i < len; i++)
-        uart_send_byte(data[i]);
+        uart_put(EUSCI_A0_BASE, data[i]);
 
-    /* Wait until the last byte has completely left the shift register
-     * before releasing the bus — dropping EN too early truncates it.
-     */
-    while (EUSCI_A_UART_queryStatusFlags(EUSCI_A0_BASE, EUSCI_A_UART_BUSY))
-        ;
+    /* Releasing the bus before the last byte is out would truncate it. */
+    uart_wait_idle(EUSCI_A0_BASE);
 
-    /* Back to RX (listen). */
+    /* Back to listening. */
     GPIO_setOutputLowOnPin(RS485_EN_PORT, RS485_EN_PIN);
 }
 
-void uart_send_string(const char *str)
+void uart_rs485_send_string(const char *str)
 {
     uint16_t len = 0;
     while (str[len] != '\0')
         len++;
-    uart_send_buffer((const uint8_t *)str, len);
+    uart_rs485_send((const uint8_t *)str, len);
+}
+
+/* ===================== HMI screen — eUSCI_A2 ========================= */
+
+void uart_hmi_init(void)
+{
+    /* UCA2TXD / UCA2RXD are the primary module function on P7.0/P7.1
+     * (datasheet Table 9-35). */
+    GPIO_setAsPeripheralModuleFunctionOutputPin(
+        HMI_TX_PORT, HMI_TX_PIN, HMI_PIN_MUX);
+    GPIO_setAsPeripheralModuleFunctionInputPin(
+        HMI_RX_PORT, HMI_RX_PIN, HMI_PIN_MUX);
+
+    EUSCI_A_UART_initParam param = {0};
+    param.selectClockSource   = EUSCI_A_UART_CLOCKSOURCE_SMCLK;
+    param.clockPrescalar      = HMI_BR_PRESCALAR;
+    param.firstModReg         = HMI_BR_FIRSTMOD;
+    param.secondModReg        = HMI_BR_SECONDMOD;
+    param.parity              = EUSCI_A_UART_NO_PARITY;
+    param.msborLsbFirst       = EUSCI_A_UART_LSB_FIRST;
+    param.numberofStopBits    = EUSCI_A_UART_ONE_STOP_BIT;
+    param.uartMode            = EUSCI_A_UART_MODE;
+    param.overSampling        = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION;
+
+    EUSCI_A_UART_init(EUSCI_A2_BASE, &param);
+    EUSCI_A_UART_enable(EUSCI_A2_BASE);
+}
+
+void uart_hmi_send(const uint8_t *data, uint16_t len)
+{
+    uint16_t i;
+    for (i = 0; i < len; i++)
+        uart_put(EUSCI_A2_BASE, data[i]);
+
+    uart_wait_idle(EUSCI_A2_BASE);
 }

@@ -1,12 +1,13 @@
 /*
- * bsp/uart.h — RS485 UART (eUSCI_A0), BSP layer.
+ * bsp/uart.h — the board's two UART links (BSP layer).
  *
- * Phase 3 scope: transmit only, used as the firmware's debug output.
- * Receive and the modbus-like protocol come later (Phase 9).
+ *   RS485  : eUSCI_A0 on P4.3/P4.4, 9600 8N1, half-duplex (DIR pin on P4.5)
+ *            -> to the LoRaWAN gateway / center.
+ *   HMI    : eUSCI_A2 on P7.0/P7.1, 115200 8N1, full-duplex 3.3 V TTL
+ *            -> to the TY040HDL04NF screen module (see CLAUDE.md §2.2).
  *
- * The RS485 transceiver is half-duplex, so uart_send_string() handles the
- * direction-enable pin: it drives EN high (TX) before sending and back low
- * (RX) after the final byte has fully shifted out.
+ * RS485 send handles the transceiver direction pin; the HMI link is a plain
+ * point-to-point TTL line and needs no direction control.
  */
 
 #ifndef BSP_UART_H_
@@ -14,24 +15,25 @@
 
 #include <stdint.h>
 
-/*
- * uart_init() — configure eUSCI_A0 for 9600 baud 8N1 on P4.3/P4.4, and set
- * the RS485 EN pin as an output in receive mode. Call after clock_init()
- * (needs SMCLK running).
- */
-void uart_init(void);
+/* --- RS485 (eUSCI_A0) ------------------------------------------------ */
 
-/*
- * uart_send_buffer() — transmit `len` raw bytes over RS485 (binary-safe,
- * so it can carry frames containing zero bytes), managing the direction-
- * enable pin around the transfer.
- */
-void uart_send_buffer(const uint8_t *data, uint16_t len);
+/* Configure eUSCI_A0 for 9600 8N1 and put the transceiver in receive mode.
+ * Call after clock_init() (needs SMCLK). */
+void uart_rs485_init(void);
 
-/*
- * uart_send_string() — transmit a NUL-terminated string over RS485,
- * managing the direction-enable pin around the transfer.
- */
-void uart_send_string(const char *str);
+/* Send raw bytes over RS485 (binary-safe), driving the direction pin high
+ * for the transfer and back low when the last byte has shifted out. */
+void uart_rs485_send(const uint8_t *data, uint16_t len);
+
+/* Send a NUL-terminated string over RS485 (debug convenience). */
+void uart_rs485_send_string(const char *str);
+
+/* --- HMI screen (eUSCI_A2) ------------------------------------------- */
+
+/* Configure eUSCI_A2 for 115200 8N1 on P7.0/P7.1. Call after clock_init(). */
+void uart_hmi_init(void);
+
+/* Send raw bytes to the screen module (binary-safe, no direction pin). */
+void uart_hmi_send(const uint8_t *data, uint16_t len);
 
 #endif /* BSP_UART_H_ */

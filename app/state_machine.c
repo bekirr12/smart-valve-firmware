@@ -17,6 +17,7 @@
 #include "bsp/power.h"
 #include "drivers/sensors.h"
 #include "drivers/mcp4706.h"
+#include "drivers/hmi.h"
 #include "app/comm_protocol.h"
 #include "app/state_machine.h"
 
@@ -58,14 +59,16 @@ static uint16_t scale_x100(float v)
 /* INIT — bring up every peripheral, then go idle. */
 static state_t do_init(void)
 {
-    clock_init();          /* Phase 1 */
-    gpio_init();           /* Phase 2 */
-    adc_init();            /* Phase 4 */
-    i2c_init();            /* Phase 6 */
-    uart_init();           /* Phase 3 */
-    comm_protocol_init();  /* Phase 9 */
-    mcp4706_init();         /* Phase 6: DAC config (VREF=VDD) */
-    rtc_init();            /* Phase 5: start the periodic wake */
+    clock_init();          /* Phase 1  */
+    gpio_init();           /* Phase 2  */
+    adc_init();            /* Phase 4  */
+    i2c_init();            /* Phase 6  */
+    uart_rs485_init();     /* Phase 3  */
+    uart_hmi_init();       /* Phase 12 */
+    comm_protocol_init();  /* Phase 9  */
+    mcp4706_init();        /* Phase 6: DAC config (VREF=VDD)     */
+    hmi_init();            /* Phase 12: startup backlight level  */
+    rtc_init();            /* Phase 5: start the periodic wake   */
 
     /* TODO Phase 7: motor_init();  Phase 8: lt8490_init();
      * TODO Phase 11: uss_init();                                     */
@@ -116,8 +119,11 @@ static state_t do_transmit(void)
 {
     comm_protocol_update_telemetry(&g_telem);
 
+    /* Telemetry goes to two sinks: the center over RS485, and the local
+     * HMI screen over its own UART. */
     g_last_frame_len = comm_protocol_build_report(s_frame);
-    uart_send_buffer(s_frame, g_last_frame_len);
+    uart_rs485_send(s_frame, g_last_frame_len);
+    hmi_update(&g_telem);   /* stub until the widget command table arrives */
 
     g_cycle_count++;
     GPIO_toggleOutputOnPin(LED1_PORT, LED1_PIN);   /* sign of life */

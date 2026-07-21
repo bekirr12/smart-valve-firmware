@@ -191,4 +191,42 @@
 #define RS485_DEVICE_ADDRESS   0x01       /* this device's bus address     */
 #define RS485_MAX_FRAME        64         /* max frame length, bytes       */
 
+/* =====================================================================
+ * HMI SCREEN (Phase 12)   -- eUSCI_A2, TY040HDL04NF "Giraffe" protocol
+ * ---------------------------------------------------------------------
+ * 3.3 V TTL UART, 8N1, 115200 baud -> wired straight to the module, no
+ * level shifter. UCA2TXD/UCA2RXD are the PRIMARY module function on
+ * P7.0/P7.1 (datasheet Table 9-35).
+ *
+ * Baud generator is a MATCHED SET for 115200 from an 8 MHz SMCLK with
+ * oversampling; recalculate all three if the baud or SMCLK changes.
+ *
+ * Screen control lines: AUDIO-PA-EN is active-LOW for audio, so we hold it
+ * HIGH to keep the audio amplifier off.
+ * ===================================================================== */
+
+#define HMI_TX_PORT     GPIO_PORT_P7      /* P7.0 = UCA2TXD */
+#define HMI_TX_PIN      GPIO_PIN0
+#define HMI_RX_PORT     GPIO_PORT_P7      /* P7.1 = UCA2RXD */
+#define HMI_RX_PIN      GPIO_PIN1
+#define HMI_PIN_MUX     GPIO_PRIMARY_MODULE_FUNCTION
+
+#define HMI_BAUD             115200UL
+#define HMI_BR_PRESCALAR     4            /* UCBRx  for 115200 @ 8 MHz   */
+#define HMI_BR_FIRSTMOD      5            /* UCBRFx (oversampling)       */
+#define HMI_BR_SECONDMOD     0x55         /* UCBRSx (fractional mod.)    */
+
+/* Screen connector control lines (plain GPIO). */
+#define HMI_PE9_PORT        GPIO_PORT_P7  /* P7.3 - generic GPIO         */
+#define HMI_PE9_PIN         GPIO_PIN3
+#define HMI_PE8_PORT        GPIO_PORT_P7  /* P7.2 - 485-DIR              */
+#define HMI_PE8_PIN         GPIO_PIN2
+#define HMI_AUDIO_EN_PORT   GPIO_PORT_P6  /* P6.7 - AUDIO-PA-EN          */
+#define HMI_AUDIO_EN_PIN    GPIO_PIN7     /*        HIGH = audio OFF     */
+#define HMI_SPK_PORT        GPIO_PORT_P6  /* P6.6 - SPK to audio amp     */
+#define HMI_SPK_PIN         GPIO_PIN6
+
+#define HMI_MAX_FRAME        64           /* max Giraffe frame, bytes    */
+#define HMI_DEFAULT_BRIGHTNESS  60        /* 0-100, startup backlight    */
+
 #endif /* CONFIG_H_ */

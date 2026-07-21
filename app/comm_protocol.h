@@ -16,6 +16,7 @@
 #define APP_COMM_PROTOCOL_H_
 
 #include <stdint.h>
+#include "telemetry.h"
 
 /* Modbus-like function codes. */
 #define MODBUS_FUNC_READ_HOLDING   0x03   /* read holding registers        */
@@ -42,18 +43,8 @@
 #define VALVE_CMD_OPEN      1
 #define VALVE_CMD_CLOSE     2
 
-/* Telemetry values (already scaled to their register encoding). */
-typedef struct {
-    uint16_t flow;
-    uint16_t batt_voltage;
-    uint16_t batt_current;
-    uint16_t panel_voltage;
-    uint16_t panel_current;
-    uint16_t motor_current;
-    uint16_t motor_speed;
-    uint16_t valve_position;
-    uint16_t lt8490_status;
-} telemetry_t;
+/* telemetry_t lives in the shared telemetry.h so drivers/hmi can use it too
+ * without depending on this app-layer header. */
 
 /* comm_protocol_init() — clear registers and pending command. */
 void comm_protocol_init(void);

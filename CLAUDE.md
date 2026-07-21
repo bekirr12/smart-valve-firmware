@@ -177,12 +177,17 @@ for now this is accepted.
 ```
 main.c              → INIT + main state-machine loop
 config.h            → all #defines: pins, intervals, thresholds
+telemetry.h         → shared measurement data model (telemetry_t).
+                      Layer-neutral on purpose: app/comm_protocol and
+                      drivers/hmi both need it, and a driver must not
+                      include an app header.
 
 bsp/                → Board Support Package (driverlib wrappers)
   clock.c/.h        → HF/LF/USS crystals, MCLK/SMCLK/ACLK
   gpio_init.c/.h    → all pin directions/mux, LCD module disable
   adc.c/.h          → ADC12_B init + channel reads
-  uart.c/.h         → eUSCI_A0 (RS485), eUSCI_A2 (HMI)
+  uart.c/.h         → eUSCI_A0 (RS485, 9600) + eUSCI_A2 (HMI, 115200);
+                      uart_rs485_* / uart_hmi_* function pairs
   i2c.c/.h          → eUSCI_B0 (DAC)
   timer.c/.h        → Timer_A (bit-bang timebase + encoder), RTC
   power.c/.h        → LPM entry/exit, ±15 V enable
@@ -194,7 +199,8 @@ drivers/            → peripheral drivers (meaningful functions)
   lt8490.c/.h       → bit-bang STATUS decode + FAULT handling
   sensors.c/.h      → ADC raw → real units (V, A) via formulas above
   rs485.c/.h        → modbus-like frame build/parse + CRC16
-  hmi.c/.h          → screen UART stub
+  hmi.c/.h          → Giraffe frame builder + backlight; widget writes
+                      stubbed until the vendor command table arrives
 
 app/                → application logic
   state_machine.c/.h → top-level state transitions
